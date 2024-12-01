@@ -3,7 +3,10 @@
 
 module.exports = {
   plugins: [
-    // https://github.com/postcss/autoprefixer
+    // Include Tailwind CSS plugin
+    require('tailwindcss')(),
+
+    // Autoprefixer plugin for better cross-browser support
     require('autoprefixer')({
       overrideBrowserslist: [
         'last 4 Chrome versions',
@@ -15,13 +18,11 @@ module.exports = {
         'last 4 FirefoxAndroid versions',
         'last 4 iOS versions'
       ]
-    })
+    }),
 
-    // https://github.com/elchininet/postcss-rtlcss
-    // If you want to support RTL css, then
-    // 1. yarn/npm install postcss-rtlcss
-    // 2. optionally set quasar.config.js > framework > lang to an RTL language
-    // 3. uncomment the following line:
+    // Optional RTL CSS Support (uncomment if needed)
+    // Uncomment the following lines to enable RTL support in your CSS
+    // First, install postcss-rtlcss: npm install postcss-rtlcss
     // require('postcss-rtlcss')
   ]
 }
