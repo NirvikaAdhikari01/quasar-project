@@ -1,6 +1,12 @@
 <script setup>
 import { userDetails } from 'src/stores/LoginRegistration';
+import { watch } from 'vue';
+import { useRouter } from 'vue-router';
+const router=useRouter()
 const userdetails=userDetails()
+watch(()=>userdetails.isLoggedIn,(newVal,oldVal)=>{
+  console.log(`value changed from ${oldVal} to ${newVal}`)
+})
 </script>
 <template>
 <div class="flex flex-col justify-between items-center mt-[100px]">
@@ -15,7 +21,7 @@ const userdetails=userDetails()
    {{ userdetails.error }}
   </div>
   <div>
-    <q-btn label="Login" @click="userdetails.login"/>
+    <q-btn label="Login" @click="userdetails.login(router)"/>
   </div>
 </div>
 </template>
