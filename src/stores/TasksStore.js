@@ -1,90 +1,122 @@
-import { defineStore } from "pinia";
-import { ref, watch } from "vue";
-import { LocalStorage } from "quasar";
+import { ref, watch, computed } from 'vue';
+import { LocalStorage, Notify } from 'quasar';
 
-export const useTasksStore = defineStore('taskDetails', () => {
-  const details = JSON.parse(LocalStorage.getItem('taskDetails')) || {
-    tasks: [],
-    isCompleted: false,
+export const useTasksStore = () => {
+  const tasks = ref([]);
+  const filterCategory = ref('All');
+  const errorMessage = ref('');
+  const successMessage = ref('');
+  const taskToDelete = ref(null);
+  const isEditDialogVisible = ref(false);
+  const taskToEdit = ref(null);
+  const updatedDescription = ref('');
+  const updatedCategory = ref('');
+
+  // Load tasks from LocalStorage or initialize an empty array
+  const storedTasks = LocalStorage.getItem('tasks');
+  tasks.value = Array.isArray(storedTasks) ? storedTasks : [];
+
+  // Watch tasks and persist to LocalStorage
+  watch(
+    tasks,
+    (newTasks) => {
+      LocalStorage.set('tasks', newTasks);
+    },
+    { deep: true }
+  );
+
+  // Filter tasks based on category
+  const getTasks = computed(() => {
+    if (filterCategory.value === 'All') return tasks.value;
+    return tasks.value.filter((task) => task.category === filterCategory.value);
+  });
+
+  // Add new task
+  const addTask = (taskDescription, category = 'Not Started') => {
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    if (!taskDescription.trim()) {
+      errorMessage.value = 'Task description is required';
+      return;
+    }
+
+    const newTask = {
+      id: Date.now(),
+      description: taskDescription,
+      category,
+      isCompleted: false,
+    };
+
+    tasks.value.push(newTask);
+    successMessage.value = 'Task added successfully!';
+    Notify.create({ message: successMessage.value, color: 'green', timeout: 2000 });
   };
-  const tasks = ref(details.tasks || []); // Reactive array for tasks
-  const status = ref(details.isCompleted || false); // Task completion status
-  const newTask = ref(''); // Input for adding a new task
-  const error = ref(''); // Error messages
-  const editingTask = ref(''); // For editing task description
 
-  // Watcher to save tasks to LocalStorage whenever tasks change
-  watch(tasks, () => {
-    saveTasks(); // Save tasks to LocalStorage whenever tasks change
-  }, { deep: true });
-
-  // Add a new task
-  const addTask = () => {
-    if (newTask.value.trim() !== '') {
-      tasks.value.push({
-        id: Date.now(),
-        description: newTask.value.trim(),
-        isCompleted: false,
-        isEditing: false, // Add an isEditing flag
-      });
-      newTask.value = ''; // Clear the input field
-      error.value = ''; // Clear any previous error
-    } else {
-      error.value = 'The task cannot be empty';
+  // Open edit dialog with task details
+  const openEditDialog = (taskId) => {
+    const task = tasks.value.find((task) => task.id === taskId);
+    if (task) {
+      taskToEdit.value = task;
+      updatedDescription.value = task.description;
+      updatedCategory.value = task.category;
+      isEditDialogVisible.value = true;
     }
   };
 
-  // Delete a task
-  const deleteTask = (taskId) => {
-    tasks.value = tasks.value.filter(task => task.id !== taskId);
+  // Close the edit dialog
+  const closeEditDialog = () => {
+    isEditDialogVisible.value = false;
+    updatedDescription.value = '';
+    updatedCategory.value = '';
   };
 
-  // Save the task
-  const saveTask = (taskId) => {
-    const task = tasks.value.find(task => task.id === taskId);
-    if (task) {
-      task.description = editingTask.value; // Update the task description
-      task.isEditing = false; // Exit edit mode
-      editingTask.value = ''; // Clear the editing field
-    }
-    saveTasks(); // Save tasks to LocalStorage
-  };
-
-  // Toggle edit mode for a task
-  const toggleEdit = (taskId) => {
-    const task = tasks.value.find(task => task.id === taskId);
-    if (task) {
-      task.isEditing = !task.isEditing;
-      if (task.isEditing) {
-        editingTask.value = task.description; // Set initial value for editing
+  // Save the edited task
+  const saveEditedTask = () => {
+    if (updatedDescription.value.trim() && updatedCategory.value.trim()) {
+      const task = taskToEdit.value;
+      if (task) {
+        task.description = updatedDescription.value;
+        task.category = updatedCategory.value;
+        successMessage.value = 'Task updated successfully!';
+        Notify.create({ message: successMessage.value, color: 'blue', timeout: 2000 });
+        closeEditDialog();
       }
+    } else {
+      errorMessage.value = 'Both description and category are required!';
     }
   };
 
-  // Cancel editing a task
-  const cancelEdit = (taskId) => {
-    const task = tasks.value.find(task => task.id === taskId);
+  // Delete task
+  const deleteTask = (taskId) => {
+    tasks.value = tasks.value.filter((task) => task.id !== taskId);
+    Notify.create({ message: 'Task deleted successfully!', color: 'red', timeout: 2000 });
+  };
+
+  // Update task category
+  const updateCategory = (taskId, newCategory) => {
+    const task = tasks.value.find((task) => task.id === taskId);
     if (task) {
-      task.isEditing = false;
-      editingTask.value = ''; // Clear the editing field
+      task.category = newCategory;
+      Notify.create({ message: 'Category updated!', color: 'blue', timeout: 2000 });
     }
-  };
-
-  // Save tasks to LocalStorage
-  const saveTasks = () => {
-    LocalStorage.set('taskDetails', JSON.stringify({ tasks: tasks.value, isCompleted: status.value }));
   };
 
   return {
     tasks,
-    status,
-    newTask,
-    error,
+    filterCategory,
+    errorMessage,
+    successMessage,
+    getTasks,
     addTask,
+    openEditDialog,
+    closeEditDialog,
+    saveEditedTask,
     deleteTask,
-    saveTask,
-    toggleEdit,
-    cancelEdit,
-    editingTask,
+    updateCategory,
+    isEditDialogVisible,
+    updatedDescription,
+    updatedCategory,
+    taskToEdit,
   };
-});
+};
