@@ -1,25 +1,79 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar class="flex space-between">
-        <q-toolbar-title>
+    <!-- Header -->
+    <q-header>
+      <q-toolbar class="elevate-0 grid max-auto sm:flex bg-[#fafaff] top-0 left-0 h-16 sm:h-20">
+        <q-btn flat round dense icon="menu" @click="toggleDrawer" v-if="userdetails.isLoggedIn" />
+        <q-toolbar-title class="font-bold text-black text-center lg:text-4xl md:text-3xl sm:text-2xl">
           Task Management App
         </q-toolbar-title>
-        <div v-if="userdetails.isLoggedIn" class="flex space-between justify-center">
+
+        <!-- User Actions -->
+        <div v-if="userdetails.isLoggedIn" class="flex sm:justify-start md:justify-between">
           <div>
-             <q-btn label="dashboard" @click="router.push({'path':'dashboard'})" />
-             <q-btn label="tasks" @click="router.push({'path':'taskpage'})"/>
-          </div>
-          <div>
-            <q-btn label="logout" @click="userdetails.logout(router)" />
+            <q-btn label="Logout" @click="handleLogout" class="text-black rounded-full bg-slate-200 hover:bg-slate-50 transition-all duration-300 border-4 border-gray-900" />
           </div>
         </div>
-        <div v-else>
-          <q-btn label="login" @click="router.push({ path: 'login' })" />
-          <q-btn label="Signup" @click="router.push({ path: 'signup' })" />
+
+        <div v-else class="flex space-x-5 justify-center">
+          <q-btn label="Login" @click="router.push({ path: 'login' })" class="text-black rounded-full bg-slate-200 hover:bg-slate-50 transition-all duration-300 border-4 border-gray-900" />
+          <q-btn label="Signup" @click="router.push({ path: 'signup' })" class="text-black rounded-full bg-slate-200 hover:bg-slate-50 transition-all duration-300 border-4 border-gray-900" />
         </div>
       </q-toolbar>
     </q-header>
+
+    <!-- Sidebar (Drawer) -->
+    <q-drawer
+      v-if="userdetails.isLoggedIn"
+      v-model="drawer"
+      show-if-above
+      :width="200"
+      :breakpoint="500"
+      bordered
+      :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-3'"
+    >
+      <q-scroll-area class="fit">
+        <q-list class="pt-4"> <!-- Tailwind padding-top -->
+          <q-item clickable v-ripple @click="router.push({ path: 'dashboard' })">
+            <q-item-section avatar>
+              <q-icon name="dashboard" />
+            </q-item-section>
+            <q-item-section>
+              <span>Dashboard</span>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable v-ripple @click="router.push({ path: 'taskpage' })">
+            <q-item-section avatar>
+              <q-icon name="assignment" />
+            </q-item-section>
+            <q-item-section>
+              <span>Tasks</span>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable v-ripple @click="router.push({ path: 'addtask' })">
+            <q-item-section avatar>
+              <q-icon name="assignment" />
+            </q-item-section>
+            <q-item-section>
+              <span>Create Task</span>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable v-ripple @click="handleLogout">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
+            <q-item-section>
+              <span>Logout</span>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-scroll-area>
+    </q-drawer>
+
+    <!-- Page Container -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -28,8 +82,35 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
-import { userDetails } from 'src/stores/LoginRegistration';
+import { ref, watch } from 'vue';
+import { useUserDetailsStore } from 'src/stores/userDetailsStore'; // Import your userDetails store
 
+// Drawer state
+const drawer = ref(false);
+
+// Router and user details store
 const router = useRouter();
-const userdetails = userDetails(); // Using Pinia store for user details
+const userdetails = useUserDetailsStore(); // Use the Pinia store for user details
+
+// Watch for login status
+watch(
+  () => userdetails.isLoggedIn,
+  (isLoggedIn) => {
+    drawer.value = isLoggedIn; // Show drawer only if logged in
+  },
+);
+
+// Toggle Drawer (Optional for manual control)
+const toggleDrawer = () => {
+  drawer.value = !drawer.value;
+};
+
+// Handle logout
+const handleLogout = () => {
+  userdetails.logout(router); // Call the logout function from the store
+};
 </script>
+
+<style scoped>
+/* Add any custom styles if needed */
+</style>
