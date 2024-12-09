@@ -12,11 +12,11 @@ export const useTasksStore = () => {
   const updatedDescription = ref('');
   const updatedCategory = ref('');
 
-  // Load tasks from LocalStorage or initialize an empty array
+
   const storedTasks = LocalStorage.getItem('tasks');
   tasks.value = Array.isArray(storedTasks) ? storedTasks : [];
 
-  // Watch tasks and persist to LocalStorage
+
   watch(
     tasks,
     (newTasks) => {
@@ -25,13 +25,12 @@ export const useTasksStore = () => {
     { deep: true }
   );
 
-  // Filter tasks based on category
+
   const getTasks = computed(() => {
     if (filterCategory.value === 'All') return tasks.value;
     return tasks.value.filter((task) => task.category === filterCategory.value);
   });
 
-  // Add new task
   const addTask = (taskDescription, category = 'Not Started') => {
     errorMessage.value = '';
     successMessage.value = '';
@@ -53,7 +52,7 @@ export const useTasksStore = () => {
     Notify.create({ message: successMessage.value, color: 'green', timeout: 2000 });
   };
 
-  // Open edit dialog with task details
+
   const openEditDialog = (taskId) => {
     const task = tasks.value.find((task) => task.id === taskId);
     if (task) {
@@ -64,14 +63,14 @@ export const useTasksStore = () => {
     }
   };
 
-  // Close the edit dialog
+
   const closeEditDialog = () => {
     isEditDialogVisible.value = false;
     updatedDescription.value = '';
     updatedCategory.value = '';
   };
 
-  // Save the edited task
+
   const saveEditedTask = () => {
     if (updatedDescription.value.trim() && updatedCategory.value.trim()) {
       const task = taskToEdit.value;
@@ -87,13 +86,13 @@ export const useTasksStore = () => {
     }
   };
 
-  // Delete task
+
   const deleteTask = (taskId) => {
     tasks.value = tasks.value.filter((task) => task.id !== taskId);
     Notify.create({ message: 'Task deleted successfully!', color: 'red', timeout: 2000 });
   };
 
-  // Update task category
+
   const updateCategory = (taskId, newCategory) => {
     const task = tasks.value.find((task) => task.id === taskId);
     if (task) {
