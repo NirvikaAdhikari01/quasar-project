@@ -1,35 +1,77 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 import { LocalStorage } from "quasar";
+import { Notify } from "quasar";
 
 export const useUserDetailsStore = defineStore('userdetails', () => {
   const details = JSON.parse(LocalStorage.getItem('userDetails')) || {};
-
   const name = ref('');
-  const email = ref(details.email || '');
+  const email = ref('');
   const password = ref('');
   const confirmPassword = ref('');
   const isLoggedIn = ref(details.isLoggedIn || false);
   const isSubmitting = ref(false);
   const error = ref('');
   const currentUser = ref(details);
+  const validateSignup = () => {
+    if (password.value !== confirmPassword.value) {
+      error.value = "Passwords do not match";
+      return false;
+    } else if (!name.value || !email.value || !password.value || !confirmPassword.value) {
+      error.value = "All fields are required";
+      return false;
+    }
+    error.value = '';
+    return true;
+  };
 
-  // Watch for login changes and sync with LocalStorage
+  const signup = (router) => {
+    if (validateSignup()) {
+      isSubmitting.value = true;
+      setTimeout(() => {
+        const users = JSON.parse(LocalStorage.getItem('users')) || [];
+        if (users.some(user => user.email === email.value)) {
+          error.value = 'Email is already registered';
+          isSubmitting.value = false;
+          return;
+        }
+        const newDetails = {
+          name: name.value,
+          email: email.value,
+          password: password.value,
+          isLoggedIn: false,
+          tasks: []
+        };
+        users.push(newDetails);
+        LocalStorage.set('users', JSON.stringify(users));
+        isSubmitting.value = false;
+        email.value=''
+        password.value=''
+        Notify.create({ message: 'Successfully Signed Up', color: 'red', timeout: 2000 });
+        router.push({ path: '/login' });
+      }, 1000);
+    }
+  };
+
   watch(isLoggedIn, (newVal) => {
     const updatedDetails = JSON.parse(LocalStorage.getItem('userDetails')) || {};
     updatedDetails.isLoggedIn = newVal;
     LocalStorage.set('userDetails', JSON.stringify(updatedDetails));
   });
 
-  // Validate login
-  const validateLogin = (name, password) => {
-    if (!name || !password) {
+  const validateLogin = () => {
+    if (!email.value || !password.value) {
       error.value = "All fields are required";
       return false;
     }
-    const storedDetails = JSON.parse(LocalStorage.getItem('userDetails')) || {};
-    if (name === storedDetails.name && password === storedDetails.password) {
-      error.value = ''; // Clear error if login is successful
+
+    const users = JSON.parse(LocalStorage.getItem('users')) || [];
+    const foundUser = users.find(
+      (user) => user.email === email.value && user.password === password.value
+    );
+
+    if (foundUser) {
+      error.value = '';
       return true;
     } else {
       error.value = 'Unmatched credentials';
@@ -37,72 +79,57 @@ export const useUserDetailsStore = defineStore('userdetails', () => {
     }
   };
 
-  // Handle login
-  const login = async (name, password, router) => {
-    if (validateLogin(name, password)) {
+  const login = async (router) => {
+    if (validateLogin()) {
       isSubmitting.value = true;
       setTimeout(() => {
-        const storedDetails = JSON.parse(LocalStorage.getItem('userDetails')) || {};
-        storedDetails.isLoggedIn = true;
-        LocalStorage.set('userDetails', JSON.stringify(storedDetails));  // Sync to LocalStorage
-        isLoggedIn.value = true;
-        isSubmitting.value = false;
-        router.push({ path: '/dashboard' });
+        const users = JSON.parse(LocalStorage.getItem('users')) || [];
+        const loggedInUser = users.find(
+          (user) => user.email === email.value && user.password === password.value
+        );
+        if (loggedInUser) {
+          loggedInUser.isLoggedIn = true;
+          const updatedUsers = users.map((user) =>
+            user.email === loggedInUser.email ? loggedInUser : user
+          );
+          LocalStorage.set('users', JSON.stringify(updatedUsers));
+          currentUser.value = loggedInUser;
+          LocalStorage.set('userDetails', JSON.stringify(loggedInUser));
+          isLoggedIn.value = true;
+          isSubmitting.value = false;
+          Notify.create({ message: 'Successfully Logged in', color: 'red', timeout: 2000 });
+          router.push({ path: '/dashboard' });
+        } else {
+          error.value = "Login failed. User not found.";
+          isSubmitting.value = false;
+        }
       }, 1000);
-
-      return true;
     } else {
       isSubmitting.value = false;
-      return false;
     }
   };
 
-  // Handle signup
-  const signup = (router, name, email, password, confirmPassword) => {
-    if (validateSignup(name, email, password, confirmPassword)) {
-      isSubmitting.value = true;
-      setTimeout(() => {
-        const newDetails = {
-          name,
-          email,
-          password,
-          isLoggedIn: false,
-          tasks: []
-        };
-        LocalStorage.set('userDetails', JSON.stringify(newDetails));  // Sync to LocalStorage
-        isSubmitting.value = false;
-        router.push({ path: '/login' });
-      }, 1000);
-    }
-  };
-
-  // Validate signup (checking for empty fields and password match)
-  const validateSignup = (name, email, password, confirmPassword) => {
-    if (password !== confirmPassword) {
-      error.value = "Passwords do not match";
-      return false;
-    } else if (!name || !email || !password || !confirmPassword) {
-      error.value = "All fields are required";
-      return false;
-    }
-    error.value = ''; // Clear error if validation passes
-    return true;
-  };
-
-  // Logout function
   const logout = (router) => {
-    isLoggedIn.value = false; // Set isLoggedIn to false
-    name.value = ''; // Clear user details
+    const users = JSON.parse(LocalStorage.getItem('users')) || [];
+
+    const updatedUsers = users.map((user) => {
+      if (user.email === currentUser.value.email) {
+        user.isLoggedIn = false;
+      }
+      return user;
+    });
+
+    LocalStorage.set('users', JSON.stringify(updatedUsers));
+    LocalStorage.remove('userDetails');
+
+    currentUser.value = {};
+    isLoggedIn.value = false;
+    name.value = '';
     email.value = '';
     password.value = '';
     confirmPassword.value = '';
-    error.value = ''; // Clear any error messages
-
-    const details = JSON.parse(LocalStorage.getItem('userDetails')) || {};
-    details.isLoggedIn = false; // Set isLoggedIn to false in LocalStorage
-    LocalStorage.set('userDetails', JSON.stringify(details)); // Sync to LocalStorage
-
-    router.push({ path: '/' }); // Redirect to home page (or login page)
+    error.value = '';
+    router.push({ path: '/' });
   };
 
   return {
@@ -115,7 +142,7 @@ export const useUserDetailsStore = defineStore('userdetails', () => {
     error,
     login,
     signup,
-    logout, // Ensure logout is returned
+    logout,
     currentUser
   };
 });
