@@ -11,7 +11,7 @@
 
         <div v-if="userdetails.isLoggedIn" class="flex sm:justify-start md:justify-between">
           <div>
-            <q-btn label="Logout" @click="handleLogout" class="text-black rounded-full bg-slate-200 hover:bg-slate-50 transition-all duration-300 border-4 border-gray-900" />
+            <q-btn label="Logout" @click="logout" class="text-black rounded-full bg-slate-200 hover:bg-slate-50 transition-all duration-300 border-4 border-gray-900" />
           </div>
         </div>
 
@@ -83,10 +83,21 @@
 import { useRouter } from 'vue-router';
 import { ref, watch } from 'vue';
 import { useUserDetailsStore } from 'src/stores/userDetailsStore';
+import { Dialog } from 'quasar';
 const drawer = ref(false);
 const router = useRouter();
 const userdetails = useUserDetailsStore();
 
+const logout=()=>{
+  Dialog.create({
+    title: 'Confirm Logout',
+    message: 'Are you sure you want to logout',
+    ok: { label: 'Yes', color: 'negative' },
+    cancel: { label: 'No' }
+  }).onOk(() => {
+    userdetails.logout(router)
+  });
+}
 
 watch(
   () => userdetails.isLoggedIn,
@@ -101,9 +112,7 @@ const toggleDrawer = () => {
 };
 
 
-const handleLogout = () => {
-  userdetails.logout(router);
-};
+
 </script>
 
 <style scoped>
