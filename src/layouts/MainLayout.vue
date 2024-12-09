@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <!-- Header -->
+
     <q-header>
       <q-toolbar class="elevate-0 grid max-auto sm:flex bg-[#fafaff] top-0 left-0 h-16 sm:h-20">
         <q-btn flat round dense icon="menu" @click="toggleDrawer" v-if="userdetails.isLoggedIn" />
@@ -8,7 +8,7 @@
           Task Management App
         </q-toolbar-title>
 
-        <!-- User Actions -->
+
         <div v-if="userdetails.isLoggedIn" class="flex sm:justify-start md:justify-between">
           <div>
             <q-btn label="Logout" @click="handleLogout" class="text-black rounded-full bg-slate-200 hover:bg-slate-50 transition-all duration-300 border-4 border-gray-900" />
@@ -22,7 +22,6 @@
       </q-toolbar>
     </q-header>
 
-    <!-- Sidebar (Drawer) -->
     <q-drawer
       v-if="userdetails.isLoggedIn"
       v-model="drawer"
@@ -33,7 +32,7 @@
       :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-3'"
     >
       <q-scroll-area class="fit">
-        <q-list class="pt-4"> <!-- Tailwind padding-top -->
+        <q-list class="pt-4">
           <q-item clickable v-ripple @click="router.push({ path: 'dashboard' })">
             <q-item-section avatar>
               <q-icon name="dashboard" />
@@ -73,7 +72,7 @@
       </q-scroll-area>
     </q-drawer>
 
-    <!-- Page Container -->
+
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -83,34 +82,30 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { ref, watch } from 'vue';
-import { useUserDetailsStore } from 'src/stores/userDetailsStore'; // Import your userDetails store
-
-// Drawer state
+import { useUserDetailsStore } from 'src/stores/userDetailsStore';
 const drawer = ref(false);
-
-// Router and user details store
 const router = useRouter();
-const userdetails = useUserDetailsStore(); // Use the Pinia store for user details
+const userdetails = useUserDetailsStore();
 
-// Watch for login status
+
 watch(
   () => userdetails.isLoggedIn,
   (isLoggedIn) => {
-    drawer.value = isLoggedIn; // Show drawer only if logged in
+    drawer.value = isLoggedIn;
   },
 );
 
-// Toggle Drawer (Optional for manual control)
+
 const toggleDrawer = () => {
   drawer.value = !drawer.value;
 };
 
-// Handle logout
+
 const handleLogout = () => {
-  userdetails.logout(router); // Call the logout function from the store
+  userdetails.logout(router);
 };
 </script>
 
 <style scoped>
-/* Add any custom styles if needed */
+
 </style>
